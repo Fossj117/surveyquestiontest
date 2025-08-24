@@ -281,6 +281,15 @@ Qualtrics.SurveyEngine.addOnReady(function () {
                 activeYear = d.year;
                 update();
               })
+              .on('touchmove', function(event, d){
+                var p = d3.pointer(event, g.node());
+                var yPix = Math.min(plotH, Math.max(0, p[1]));
+                var v = Math.round(y.invert(yPix) / 100) * 100;
+                v = Math.max(0, Math.min(200000, v));
+                values[d.year] = v;
+                activeYear = d.year;
+                update();
+              })
           )
           .on('mouseover', function(event, d){ activeYear = d.year; update(); })
           .on('touchstart', function(event, d){ activeYear = d.year; update(); });
