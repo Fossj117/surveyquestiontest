@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qualtrics Survey Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="guessing.js" defer></script>
+    <style>
+        /* Add any necessary styles here */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #555;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .instructions {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>Instructions</h2>
+        <p>In this section, we will ask you to make estimates about the past and future average wage of {{profession}}. The average wage value for 2023 has been provided for you.</p>
+        <p>Your job is to adjust the graph to reflect your beliefs about the past and future average wage of {{profession}} for the following years: 2013, 2018, 2023, 2028, and 2033. </p>
+        <p>When you are satisfied with your graph, click the "Lock in my answers" button to submit your responses. You will not be able to change your answers after clicking this button.</p>
+    </div>
+    <div class="QuestionBody">
+    </div>
+
+    <script>
+        // Mock Qualtrics functions
+        var Qualtrics = {
+            SurveyEngine: {
+                addOnReady: function(callback) {
+                    document.addEventListener('DOMContentLoaded', callback);
+                },
+                addOnUnload: function(callback) {
+                    window.addEventListener('beforeunload', callback);
+                }
+            }
+        };
+
+        // Mock question object
+        var question = {
+            getQuestionContainer: function() {
+                return document.querySelector('.QuestionBody');
+            },
+            disableNextButton: function() {
+                console.log('Next button disabled');
+            },
+            enableNextButton: function() {
+                console.log('Next button enabled');
+            },
+            setEmbeddedData: function(key, value) {
+                console.log('Embedded data set:', key, value);
+            }
+        };
+    </script>
+</body>
+</html>
