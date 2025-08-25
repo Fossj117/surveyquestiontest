@@ -43,6 +43,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
       var mount = document.createElement('div');
       mount.className = 'draw-root';
       mount.style.cssText = 'width:100%;max-width:900px;margin:8px auto 8px;overflow:visible;';
+      mount.style.overscrollBehavior = 'contain';
       body.prepend(mount);
   
       // Controls container
@@ -75,10 +76,14 @@ Qualtrics.SurveyEngine.addOnReady(function () {
         '.d3draw .seg-annot.compact{font-size:11px;}' +
         '.d3draw .seg-box{fill:#fff;stroke:#ddd;opacity:0.97;}';
       document.head.appendChild(style);
+      // Ensure touch gestures are treated as drags on targets; disable text selection
+      style.textContent +=
+        '.d3draw .pt, .d3draw .handle, .d3draw .hit { touch-action: none; -ms-touch-action: none; }' +
+        '.d3draw { -webkit-user-select: none; user-select: none; }';
   
       // ----- Scales & scaffolding -----
       var margin = { top:24, right:32, bottom:160, left:72 };
-      var width, plotW, plotH, svg, g, x, y, linePath, pointsG, annG;
+      var width, plotW, plotH, svg, g, x, y, linePath, pointsG, annG, drag;
   
       function layout(){
         width = Math.max(400, mount.clientWidth || 600);
@@ -87,6 +92,7 @@ Qualtrics.SurveyEngine.addOnReady(function () {
       }
   
       function init(){
+        console.log('Init function called');
         layout();
         d3.select(mount).selectAll('*').remove();
   
@@ -101,6 +107,21 @@ Qualtrics.SurveyEngine.addOnReady(function () {
   
         x = d3.scalePoint().domain(YEARS).range([0, plotW]).padding(0.5);
         y = d3.scaleLinear().domain([0, 200000]).range([plotH, 0]);
+
+        // Persistent drag behavior (set up once)
+        drag = d3.drag()
+          .container(function(){ return g.node(); })
+          .clickDistance(3)
+          .filter(function(event, d){ return !locked && d.year !== FIXED_YEAR; })
+          .on('start', function(event, d){
+            console.log('start', event.sourceEvent && event.sourceEvent.type, event.pointerType);
+            activeYear = d.year;
+            // do not update value on start; wait for first drag move
+            update();
+          })
+          .on('drag', function(event, d){
+            setFromPointer(event, d);
+          });
   
         // grid
         g.append('g').attr('class','grid')
@@ -135,6 +156,24 @@ Qualtrics.SurveyEngine.addOnReady(function () {
         pointsG  = g.append('g').attr('class','points');
         annG     = g.append('g').attr('class','annotations');
   
+        update();
+        console.log('Drag behavior setup complete');
+      }
+
+      function setFromPointer(event, d){
+        var yPix;
+        if (event && typeof event.y === 'number' && !isNaN(event.y)) {
+          yPix = event.y;
+        } else {
+          var src = (event && event.sourceEvent) ? event.sourceEvent : event;
+          var p = d3.pointer(src, g.node());
+          if (!p || isNaN(p[1])) return;
+          yPix = p[1];
+        }
+        yPix = Math.min(plotH, Math.max(0, yPix));
+        var v = Math.round(y.invert(yPix) / 100) * 100;
+        values[d.year] = Math.max(0, Math.min(200000, v));
+        activeYear = d.year;
         update();
       }
   
@@ -187,7 +226,15 @@ Qualtrics.SurveyEngine.addOnReady(function () {
         // points
         var pts = pointsG.selectAll('g.pt').data(data, function(d){ return d.year; });
         var enter = pts.enter().append('g').attr('class','pt');
-  
+
+        // Larger invisible hit target for easier touch
+        enter.append('circle')
+          .attr('class','hit')
+          .attr('r', 24)
+          .attr('fill', 'transparent')
+          .style('pointer-events', 'all');
+
+        // Visible handle
         enter.append('circle')
           .attr('class','handle')
           .attr('r', 9)
@@ -213,8 +260,8 @@ Qualtrics.SurveyEngine.addOnReady(function () {
         // position groups
         merged.attr('transform', function(d){ return 'translate(' + x(d.year) + ',' + y(d.value) + ')'; });
   
-        // style points (lock turns everything red)
-        merged.select('circle')
+        // style points (lock turns everything red) - apply only to handle
+        merged.select('circle.handle')
           .attr('fill', function(d){
             return (locked || d.year === FIXED_YEAR) ? '#d62728' : '#fff';
           })
@@ -265,25 +312,8 @@ Qualtrics.SurveyEngine.addOnReady(function () {
              .attr('text-anchor','middle');
         });
   
-        // Draggable only if not fixed and not locked
-        merged.on('.drag', null);
-        merged.filter(function(d){ return !locked && d.year !== FIXED_YEAR; })
-          .call(
-            d3.drag()
-              .container(function(){ return svg.node(); })
-              .on('start', function(event, d){ activeYear = d.year; update(); })
-              .on('drag', function(event, d){
-                var p = d3.pointer(event, g.node());
-                var yPix = Math.min(plotH, Math.max(0, p[1]));
-                var v = Math.round(y.invert(yPix) / 100) * 100;
-                v = Math.max(0, Math.min(200000, v));
-                values[d.year] = v;
-                activeYear = d.year;
-                update();
-              })
-          )
-          .on('mouseover', function(event, d){ activeYear = d.year; update(); })
-          .on('touchstart', function(event, d){ activeYear = d.year; update(); });
+        // Attach persistent drag only to new nodes; listeners persist across updates
+        enter.call(drag);
   
         pts.exit().remove();
   
