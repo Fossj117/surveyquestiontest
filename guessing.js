@@ -29,6 +29,11 @@ Qualtrics.SurveyEngine.addOnReady(function () {
         pct: { "2013_2018":"pct_2013_2018", "2018_2023":"pct_2018_2023", "2023_2028":"pct_2023_2028", "2028_2033":"pct_2028_2033" },
         locked: "locked_answers"
       };
+      
+      // Profession label from Embedded Data (fallback to literal placeholder if unavailable)
+      var profession = (Qualtrics && Qualtrics.SurveyEngine && typeof Qualtrics.SurveyEngine.getEmbeddedData === 'function'
+        ? Qualtrics.SurveyEngine.getEmbeddedData('Profession')
+        : null) || 'Profession';
   
       // ----- Mount -----
       var cont = q.getQuestionContainer();
@@ -74,7 +79,8 @@ Qualtrics.SurveyEngine.addOnReady(function () {
         '.d3draw .fixed-note{font-size:12px;fill:#d62728;font-weight:600;pointer-events:none;}' +
         '.d3draw .seg-annot{font-size:12px;fill:#111;font-weight:600;pointer-events:none;}' +
         '.d3draw .seg-annot.compact{font-size:11px;}' +
-        '.d3draw .seg-box{fill:#fff;stroke:#ddd;opacity:0.97;}';
+        '.d3draw .seg-box{fill:#fff;stroke:#ddd;opacity:0.97;}' +
+        '.d3draw .chart-title{font-size:16px;fill:#111;font-weight:600;}';
       document.head.appendChild(style);
       // Ensure touch gestures are treated as drags on targets; disable text selection
       style.textContent +=
@@ -101,6 +107,14 @@ Qualtrics.SurveyEngine.addOnReady(function () {
           .attr('viewBox', '0 0 ' + width + ' ' + H)
           .attr('preserveAspectRatio', 'xMidYMid meet')
           .style('touch-action', 'none');
+        
+        // Title
+        svg.append('text')
+          .attr('class', 'chart-title')
+          .attr('x', width / 2)
+          .attr('y', 18)
+          .attr('text-anchor', 'middle')
+          .text('Average Wage for ' + profession + ' over Time');
   
         g = svg.append('g')
           .attr('transform', 'translate(' + (margin.left + 20) + ',' + margin.top + ')');

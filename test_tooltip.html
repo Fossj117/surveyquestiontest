@@ -118,6 +118,12 @@
       opacity: 1;
     }
 
+    /* Show when explicitly toggled open (mobile tap) */
+    .tooltip-wrapper[data-open="true"] .tooltip-content {
+      visibility: visible;
+      opacity: 1;
+    }
+
     .hint {
       color: #6b7280;
       font-size: 0.9rem;
@@ -131,7 +137,7 @@
     <div class="question-text">
       In the past week, how many times did you use
       <span class="tooltip-wrapper">
-        <span class="tooltip-trigger" tabindex="0" aria-describedby="llm-tooltip">chat-based LLMs</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-controls="llm-tooltip" aria-expanded="false" aria-describedby="llm-tooltip">chat-based LLMs</span>
         <span class="tooltip-content" id="llm-tooltip" role="tooltip">
           Chat-based large language models (LLMs) are AI systems that understand and generate text through conversational interfaces. Examples include ChatGPT, Claude, and Gemini.
         </span>
@@ -164,6 +170,59 @@
       <p class="hint">Select one option.</p>
     </form>
   </div>
+  <script>
+    (function() {
+      var wrapper = document.querySelector('.tooltip-wrapper');
+      if (!wrapper) return;
+      var trigger = wrapper.querySelector('.tooltip-trigger');
+
+      function openTooltip() {
+        wrapper.setAttribute('data-open', 'true');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+
+      function closeTooltip() {
+        wrapper.removeAttribute('data-open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+
+      function toggleTooltip() {
+        if (wrapper.getAttribute('data-open') === 'true') {
+          closeTooltip();
+        } else {
+          openTooltip();
+        }
+      }
+
+      // Tap/click to toggle
+      trigger.addEventListener('click', function(e) {
+        e.preventDefault();
+        toggleTooltip();
+      });
+
+      // Keyboard support
+      trigger.addEventListener('keydown', function(e) {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          toggleTooltip();
+        } else if (e.key === 'Escape' || e.key === 'Esc') {
+          closeTooltip();
+          trigger.blur();
+        }
+      });
+
+      // Click outside to close
+      document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target)) {
+          closeTooltip();
+        }
+      });
+
+      // Close on resize/orientation changes
+      window.addEventListener('resize', closeTooltip);
+      window.addEventListener('orientationchange', closeTooltip);
+    })();
+  </script>
 </body>
 </html>
 
